@@ -27,6 +27,10 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 * Improved handling of client-side serialization errors that were formerly just being logged rather than being raised.
 * Add Python `TraversalMetrics` and `Metrics` deserializers.
 * Masked sensitive configuration options in the logs of `KryoShimServiceLoader`.
+* Introduced `WebSocketChannelizerV2` which fixes a bug with multithreaded use of the same `Client` object.
+* Deprecated `WebSocketChannelizer` and renamed to `WebSocketChannelizerV1`.
+* Deprecated `NioChannelizer` for both the client and server as it is not particularly used.
+* Fixed bug in configuration of `Channelizer` for the `Cluster` Java driver object.
 * Added `globalFunctionCacheEnabled` to the `GroovyCompilerGremlinPlugin` to allow that cache to be disabled.
 * Added `globalFunctionCacheEnabled` override to `SessionOpProcessor` configuration.
 * Added status code to `GremlinServerError` so that it would be more directly accessible during failures.

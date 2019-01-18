@@ -21,11 +21,50 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 
 *Gremlin Symphony #40 in G Minor*
 
-== TinkerPop 3.3.5
+== TinkerPop 3.3.6
 
 *Release Date: NOT OFFICIALLY RELEASED YET*
 
 Please see the link:https://github.com/apache/tinkerpop/blob/3.3.6/CHANGELOG.asciidoc#release-3-3-6[changelog] for a complete list of all the modifications that are part of this release.
+
+=== Upgrading for Users
+
+==== WebSocket Channelizer Option
+
+There is an important new WebSocket option to consider. First, note that for the Java driver, the
+`WebSocketChannelizer` has been deprecated and renamed to `WebSocketChannelizerV1`. It is this implementation that
+the driver is currently configured to by default and represents no change to functionality. As such, an upgrade to
+3.3.6 should create no friction if connecting to older server versions.
+
+This version also introduces `WebSocketChannelizerV2` which fixes a bug in scenarios where authentication is configured
+on the server and the `Client` instances are utilized in a multi-threaded fashion. This channelizer works with a 3.3.6
+server, but should be technically compatible with older versions as well. The only side-effect is that an older server
+will generate a log entry `WARN` message during the authentication process as it will not recognize the new "noop"
+message that was introduced to help fix the aforementioned bug.
+
+To use the new `WebSocketChannelizerV2` just configure it as part of the `Cluster` object creation as follows:
+
+[source,java]
+----
+Cluster cluster = Cluster.build().channelizer(Channelizer.WebSocketChannelizerV2.class).create()
+----
+
+See: https://issues.apache.org/jira/browse/TINKERPOP-2132[TINKERPOP-2132]
+
+=== Upgrading for Providers
+
+==== Graph System Providers
+
+===== noop Processor
+
+The Gremlin Server protocol now allows for a "noop" processor, which simply returns a `SUCCESS` message when it is
+encountered. This request message provides the driver a neutral way to force authentication (if configured on the
+server) without having to actually process a script or bytecode. If this feature is not supported, the driver will
+simply ignore exceptions generated from it. The likely exception will be one related to the processor not being found.
+Depending on how a Graph System Provider has implemented the protocol will determine the impact that this change has.
+See the users section of these upgrade notes for more information on this topic.
+
+See: https://issues.apache.org/jira/browse/TINKERPOP-2132[TINKERPOP-2132]
 
 == TinkerPop 3.3.5
 

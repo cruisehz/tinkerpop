@@ -157,7 +157,7 @@ public class ProfilingApplication {
         final int maxWaitForConnection = Integer.parseInt(options.getOrDefault("maxWaitForConnection", "3000").toString());
         final int workerPoolSize = Integer.parseInt(options.getOrDefault("workerPoolSize", "2").toString());
         final int tooSlowThreshold = Integer.parseInt(options.getOrDefault("tooSlowThreshold", "125").toString());
-        final String channelizer = options.getOrDefault("channelizer", Channelizer.WebSocketChannelizer.class.getName()).toString();
+        final String channelizer = options.getOrDefault("channelizer", Channelizer.WebSocketChannelizerV1.class.getName()).toString();
         final String serializer = options.getOrDefault("serializer", Serializers.GRYO_V1D0.name()).toString();
 
         final boolean exercise = Boolean.parseBoolean(options.getOrDefault("exercise", "false").toString());

@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
  * protocol.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
+ * @deprecated As of release 3.3.6, not replaced - prefer {@link WebSocketChannelizer}.
  */
+@Deprecated
 public class NioChannelizer extends AbstractChannelizer {
     private static final Logger logger = LoggerFactory.getLogger(NioChannelizer.class);
 

@@ -570,7 +570,7 @@ public final class Cluster {
         private int reconnectInterval = Connection.RECONNECT_INTERVAL;
         private int resultIterationBatchSize = Connection.RESULT_ITERATION_BATCH_SIZE;
         private long keepAliveInterval = Connection.KEEP_ALIVE_INTERVAL;
-        private String channelizer = Channelizer.WebSocketChannelizer.class.getName();
+        private String channelizer = Channelizer.WebSocketChannelizerV1.class.getName();
         private boolean enableSsl = false;
         private String trustCertChainFile = null;
         private String keyCertChainFile = null;
@@ -900,7 +900,7 @@ public final class Cluster {
          * Specify the {@link Channelizer} implementation to use on the client when creating a {@link Connection}.
          */
         public Builder channelizer(final Class channelizerClass) {
-            return channelizer(channelizerClass.getCanonicalName());
+            return channelizer(channelizerClass.getName());
         }
 
         /**

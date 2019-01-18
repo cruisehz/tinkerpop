@@ -37,9 +37,11 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
+import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -144,9 +146,42 @@ public interface Channelizer extends ChannelHandler {
     }
 
     /**
-     * WebSocket {@link Channelizer} implementation.
+     * Same implementation as {@link WebSocketChannelizer}, just renamed.
      */
-    public final class WebSocketChannelizer extends AbstractChannelizer {
+    public class WebSocketChannelizerV1 extends WebSocketChannelizer {
+
+    }
+
+    /**
+     * Same implementation as {@link WebSocketChannelizer}, but provides support
+     */
+    public class WebSocketChannelizerV2 extends WebSocketChannelizer {
+
+        @Override
+        public void connected() {
+            // need to call super first because it validates the websocket handshake before sending out the request
+            super.connected();
+            
+            try {
+                final CompletableFuture<ResultSet> future = new CompletableFuture<>();
+                connection.write(RequestMessage.build("").processor("noop").create(), future);
+                future.get().all().get();
+            } catch (Exception ex) {
+                // do nothing - noop is first supported in 3.3.6. for now we just want to force a single request
+                // through for auth/sasl purposes. the "noop" isn't supported in versions prior to 3.3.6 and 3.4.1
+                // so an exception is expected but it will force the auth process to occur regardless
+                // in the background.
+            }
+        }
+    }
+
+    /**
+     * WebSocket {@link Channelizer} implementation.
+     *
+     * @deprecated As of release 3.3.6, replaced by {@link WebSocketChannelizerV1}.
+     */
+    @Deprecated
+    public class WebSocketChannelizer extends AbstractChannelizer {
         private WebSocketClientHandler handler;
 
         private WebSocketGremlinRequestEncoder webSocketGremlinRequestEncoder;
@@ -220,12 +255,18 @@ public interface Channelizer extends ChannelHandler {
                 throw new RuntimeException(new ConnectionException(connection.getUri(),
                         "Could not complete websocket handshake - ensure that client protocol matches server", ex));
             }
+
+            // still need to call the super as it tries to initialize for sasl purposes
+            super.connected();
         }
     }
 
     /**
      * NIO {@link Channelizer} implementation.
+     *
+     * @deprecated As of release 3.3.6, prefer {@link WebSocketChannelizerV2} when possible.
      */
+    @Deprecated
     public final class NioChannelizer extends AbstractChannelizer {
         @Override
         public void init(final Connection connection) {

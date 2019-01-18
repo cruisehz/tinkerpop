@@ -413,9 +413,9 @@ final class Settings {
         /**
          * The constructor for the channel that connects to the server. This value should be the fully qualified
          * class name of a Gremlin Driver {@link Channelizer} implementation.  By default this value is set to
-         * {@link org.apache.tinkerpop.gremlin.driver.Channelizer.WebSocketChannelizer}.
+         * {@link Channelizer.WebSocketChannelizerV1}.
          */
-        public String channelizer = Channelizer.WebSocketChannelizer.class.getName();
+        public String channelizer = Channelizer.WebSocketChannelizerV1.class.getName();
 
         /**
          * A valid Gremlin script that can be used to test remote operations.
