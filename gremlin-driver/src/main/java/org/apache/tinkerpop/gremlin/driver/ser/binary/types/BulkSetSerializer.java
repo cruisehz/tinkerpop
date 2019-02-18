@@ -20,7 +20,6 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -52,13 +51,13 @@ public class BulkSetSerializer extends SimpleTypeSerializer<BulkSet> {
     @Override
     protected ByteBuf writeValue(final BulkSet value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
         final Map<Object,Long> raw = value.asBulk();
-        final CompositeByteBuf result = allocator.compositeBuffer(1 + raw.size() * 2);
-        result.addComponent(true, allocator.buffer(4).writeInt(raw.size()));
+        final BufferBuilder result = buildBuffer(1 + raw.size() * 2);
+        result.add(allocator.buffer(4).writeInt(raw.size()));
 
         try {
             for (Object key : raw.keySet()) {
-                result.addComponents(true, context.write(key, allocator),
-                        allocator.buffer(8).writeLong(value.get(key)));
+                result.add(context.write(key, allocator));
+                result.add(allocator.buffer(8).writeLong(value.get(key)));
             }
         } catch (Exception ex) {
             // We should release it as the ByteBuf is not going to be yielded for a reader
@@ -66,6 +65,6 @@ public class BulkSetSerializer extends SimpleTypeSerializer<BulkSet> {
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 }

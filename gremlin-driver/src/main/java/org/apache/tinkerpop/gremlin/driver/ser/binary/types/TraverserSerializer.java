@@ -20,7 +20,6 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -46,16 +45,16 @@ public class TraverserSerializer extends SimpleTypeSerializer<Traverser> {
 
     @Override
     protected ByteBuf writeValue(final Traverser value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(2);
+        final BufferBuilder result = buildBuffer(2);
 
         try {
-            result.addComponent(true, context.writeValue(value.bulk(), allocator, false));
-            result.addComponent(true, context.write(value.get(), allocator));
+            result.add(context.writeValue(value.bulk(), allocator, false));
+            result.add(context.write(value.get(), allocator));
         } catch (Exception ex) {
             result.release();
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 }

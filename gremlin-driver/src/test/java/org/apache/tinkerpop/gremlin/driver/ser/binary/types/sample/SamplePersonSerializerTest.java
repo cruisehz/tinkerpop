@@ -20,6 +20,8 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types.sample;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseMessage;
 import org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
@@ -39,11 +41,12 @@ import java.util.UUID;
 
 import static org.apache.tinkerpop.gremlin.driver.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
 import static org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1.TOKEN_CUSTOM;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class SamplePersonSerializerTest {
 
-    private static final ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+    private final UnpooledByteBufAllocator allocator = new UnpooledByteBufAllocator(false);
 
     @Test
     public void shouldCustomSerializationWithPerson() throws SerializationException {
@@ -84,6 +87,11 @@ public class SamplePersonSerializerTest {
 
         final SamplePerson actual = (SamplePerson) deserialized.getResult().getData();
         assertThat(actual, new ReflectionEquals(person));
+
+        serialized.release();
+
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     public static class CustomIoRegistry extends AbstractIoRegistry {

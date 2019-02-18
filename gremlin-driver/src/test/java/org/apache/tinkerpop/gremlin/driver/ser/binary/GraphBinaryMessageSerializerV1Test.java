@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseMessage;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseStatusCode;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class GraphBinaryMessageSerializerV1Test {
-    private final ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+    private final UnpooledByteBufAllocator allocator = new UnpooledByteBufAllocator(false);
     private final GraphBinaryMessageSerializerV1 serializer = new GraphBinaryMessageSerializerV1();
 
     @Test
@@ -53,6 +54,10 @@ public class GraphBinaryMessageSerializerV1Test {
         buffer.readBytes(new byte[mimeLen]);
         final RequestMessage deserialized = serializer.deserializeRequest(buffer);
         assertThat(request, new ReflectionEquals(deserialized));
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -67,6 +72,10 @@ public class GraphBinaryMessageSerializerV1Test {
         buffer.readBytes(new byte[mimeLen]);
         final RequestMessage deserialized = serializer.deserializeRequest(buffer);
         assertThat(request, new ReflectionEquals(deserialized));
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -81,6 +90,10 @@ public class GraphBinaryMessageSerializerV1Test {
         buffer.readBytes(new byte[mimeLen]);
         final RequestMessage deserialized = serializer.deserializeRequest(buffer);
         assertThat(request, new ReflectionEquals(deserialized));
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -95,6 +108,10 @@ public class GraphBinaryMessageSerializerV1Test {
         final ByteBuf buffer = serializer.serializeResponseAsBinary(response, allocator);
         final ResponseMessage deserialized = serializer.deserializeResponse(buffer);
         assertResponseEquals(response, deserialized);
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -108,6 +125,10 @@ public class GraphBinaryMessageSerializerV1Test {
         final ByteBuf buffer = serializer.serializeResponseAsBinary(response, allocator);
         final ResponseMessage deserialized = serializer.deserializeResponse(buffer);
         assertResponseEquals(response, deserialized);
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -120,6 +141,10 @@ public class GraphBinaryMessageSerializerV1Test {
         final ByteBuf buffer = serializer.serializeResponseAsBinary(response, allocator);
         final ResponseMessage deserialized = serializer.deserializeResponse(buffer);
         assertResponseEquals(response, deserialized);
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test
@@ -132,6 +157,10 @@ public class GraphBinaryMessageSerializerV1Test {
         final ByteBuf buffer = serializer.serializeResponseAsBinary(response, allocator);
         final ResponseMessage deserialized = serializer.deserializeResponse(buffer);
         assertResponseEquals(response, deserialized);
+
+        buffer.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 
     @Test

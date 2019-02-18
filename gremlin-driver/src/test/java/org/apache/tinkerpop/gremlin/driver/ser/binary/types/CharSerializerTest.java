@@ -20,8 +20,10 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
+import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryWriter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,9 +64,33 @@ public class CharSerializerTest {
 
     @Test
     public void writeValueTest() throws SerializationException {
-        final ByteBuf actual= serializer.writeValue(charValue, allocator, null);
+        final PooledByteBufAllocator allocator = new PooledByteBufAllocator();
+
+        final ByteBuf actual = serializer.writeValue(charValue, allocator, null);
         final byte[] actualBytes = new byte[byteArray.length];
         actual.readBytes(actualBytes);
         assertTrue(Arrays.deepEquals(new byte[][]{byteArray}, new byte[][]{actualBytes}));
+
+        actual.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
+    }
+
+    @Test
+    public void writeTest() throws SerializationException {
+        final PooledByteBufAllocator allocator = new PooledByteBufAllocator();
+
+        final ByteBuf actual = serializer.write(charValue, allocator, new GraphBinaryWriter());
+        final byte[] actualBytes = new byte[byteArray.length];
+
+        // Null flag
+        assertEquals(0, actual.readByte());
+
+        actual.readBytes(actualBytes);
+        assertTrue(Arrays.deepEquals(new byte[][]{byteArray}, new byte[][]{actualBytes}));
+
+        actual.release();
+        assertEquals(0, allocator.metric().usedHeapMemory());
+        assertEquals(0, allocator.metric().usedDirectMemory());
     }
 }

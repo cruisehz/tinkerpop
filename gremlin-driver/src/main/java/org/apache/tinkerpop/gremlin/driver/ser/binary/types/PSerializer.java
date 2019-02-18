@@ -20,7 +20,6 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -121,15 +120,15 @@ public class PSerializer<T extends P> extends SimpleTypeSerializer<T> {
 
         final List<Object> argsAsList = args instanceof Collection ? new ArrayList<>((Collection) args) : Collections.singletonList(args);
         final int length = argsAsList.size();
-        final CompositeByteBuf result = allocator.compositeBuffer(2 + length);
+        final BufferBuilder result = buildBuffer(2 + length);
 
-        result.addComponent(true, context.writeValue(predicateName, allocator, false));
-        result.addComponent(true, context.writeValue(length, allocator, false));
+        result.add(context.writeValue(predicateName, allocator, false));
+        result.add(context.writeValue(length, allocator, false));
 
         for (Object o : argsAsList) {
-            result.addComponent(true, context.write(o, allocator));
+            result.add(context.write(o, allocator));
         }
 
-        return result;
+        return result.create();
     }
 }

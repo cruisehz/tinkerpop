@@ -57,23 +57,23 @@ public class MetricsSerializer extends SimpleTypeSerializer<Metrics> {
 
     @Override
     protected ByteBuf writeValue(final Metrics value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(6);
+        final BufferBuilder result = buildBuffer(6);
 
         try {
-            result.addComponent(true, context.writeValue(value.getId(), allocator, false));
-            result.addComponent(true, context.writeValue(value.getName(), allocator, false));
-            result.addComponent(true, context.writeValue(value.getDuration(TimeUnit.NANOSECONDS), allocator, false));
-            result.addComponent(true, context.writeValue(value.getCounts(), allocator, false));
-            result.addComponent(true, context.writeValue(value.getAnnotations(), allocator, false));
+            result.add(context.writeValue(value.getId(), allocator, false));
+            result.add(context.writeValue(value.getName(), allocator, false));
+            result.add(context.writeValue(value.getDuration(TimeUnit.NANOSECONDS), allocator, false));
+            result.add(context.writeValue(value.getCounts(), allocator, false));
+            result.add(context.writeValue(value.getAnnotations(), allocator, false));
 
             // Avoid changing type to List
-            result.addComponent(true, collectionSerializer.writeValue(value.getNested(), allocator, context));
+            result.add(collectionSerializer.writeValue(value.getNested(), allocator, context));
         } catch (Exception ex) {
             // We should release the CompositeByteBuf as it's not going to be yielded for a reader
             result.release();
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 }

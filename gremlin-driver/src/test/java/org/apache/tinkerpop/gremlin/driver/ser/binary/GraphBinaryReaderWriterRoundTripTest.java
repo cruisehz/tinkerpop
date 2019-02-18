@@ -20,6 +20,9 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.util.ResourceLeakDetector;
 import org.apache.tinkerpop.gremlin.process.computer.Computer;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.decoration.VertexProgramStrategy;
 import org.apache.tinkerpop.gremlin.process.remote.traversal.DefaultRemoteTraverser;
@@ -158,7 +161,8 @@ public class GraphBinaryReaderWriterRoundTripTest {
 
         return Arrays.asList(
                 new Object[] {"String", "ABC", null},
-                new Object[] {"Char", '£', null},
+                new Object[] {"Char", '£', null}
+                ,
 
                 // numerics
                 new Object[] {"Byte", 1, null},
@@ -278,7 +282,8 @@ public class GraphBinaryReaderWriterRoundTripTest {
                 new Object[] {"Map", map, null},
                 new Object[] {"Map", nestedMap, null},
                 new Object[] {"Set", set, null},
-                new Object[] {"SetNested", nestedSet, null});
+                new Object[] {"SetNested", nestedSet, null}
+                );
     }
 
     @Parameterized.Parameter(value = 0)
@@ -292,6 +297,8 @@ public class GraphBinaryReaderWriterRoundTripTest {
 
     @Test
     public void shouldWriteAndRead() throws Exception {
+        final UnpooledByteBufAllocator allocator = new UnpooledByteBufAllocator(false);
+
         // Test it multiple times as the type registry might change its internal state
         for (int i = 0; i < 5; i++) {
             final ByteBuf buffer = writer.write(value, allocator);
@@ -299,6 +306,10 @@ public class GraphBinaryReaderWriterRoundTripTest {
             final Object result = reader.read(buffer);
 
             Optional.ofNullable(assertion).orElse((Consumer) r -> assertEquals(value, r)).accept(result);
+
+            buffer.release();
+            assertEquals(0, allocator.metric().usedHeapMemory());
+            assertEquals(0, allocator.metric().usedDirectMemory());
         }
     }
 }

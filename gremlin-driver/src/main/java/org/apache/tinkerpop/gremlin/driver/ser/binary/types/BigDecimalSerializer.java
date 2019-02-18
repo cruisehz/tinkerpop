@@ -20,7 +20,7 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -46,9 +46,8 @@ public class BigDecimalSerializer extends SimpleTypeSerializer<BigDecimal> {
 
     @Override
     protected ByteBuf writeValue(final BigDecimal value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(2);
-        result.addComponent(true, context.writeValue(value.scale(), allocator, false));
-        result.addComponent(true, context.writeValue(value.unscaledValue(), allocator, false));
-        return result;
+        return Unpooled.unmodifiableBuffer(
+                context.writeValue(value.scale(), allocator, false),
+                context.writeValue(value.unscaledValue(), allocator, false));
     }
 }

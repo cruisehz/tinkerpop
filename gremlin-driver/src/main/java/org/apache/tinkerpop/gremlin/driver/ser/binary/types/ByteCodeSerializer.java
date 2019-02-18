@@ -20,16 +20,18 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryWriter;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ByteCodeSerializer extends SimpleTypeSerializer<Bytecode> {
+    private static final Object[] EMPTY_ARGS = new Object[0];
+
     public ByteCodeSerializer() {
         super(DataType.BYTECODE);
     }
@@ -40,19 +42,30 @@ public class ByteCodeSerializer extends SimpleTypeSerializer<Bytecode> {
 
         final int stepsLength = buffer.readInt();
         for (int i = 0; i < stepsLength; i++) {
-            result.addStep(context.readValue(buffer, String.class, false), getInstructionArguments(buffer, context));
+            result.addStep(readString(buffer), getInstructionArguments(buffer, context));
         }
 
         final int sourcesLength = buffer.readInt();
         for (int i = 0; i < sourcesLength; i++) {
-            result.addSource(context.readValue(buffer, String.class, false), getInstructionArguments(buffer, context));
+            result.addSource(readString(buffer), getInstructionArguments(buffer, context));
         }
 
         return result;
     }
 
+    private static String readString(final ByteBuf buffer) {
+        final byte[] bytes = new byte[buffer.readInt()];
+        buffer.readBytes(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
     private static Object[] getInstructionArguments(final ByteBuf buffer, final GraphBinaryReader context) throws SerializationException {
         final int valuesLength = buffer.readInt();
+
+        if (valuesLength == 0) {
+            return EMPTY_ARGS;
+        }
+
         final Object[] values = new Object[valuesLength];
         for (int j = 0; j < valuesLength; j++) {
             values[j] = context.read(buffer);
@@ -65,7 +78,7 @@ public class ByteCodeSerializer extends SimpleTypeSerializer<Bytecode> {
         final List<Bytecode.Instruction> steps = value.getStepInstructions();
         final List<Bytecode.Instruction> sources = value.getSourceInstructions();
         // 2 buffers for the length + plus 2 buffers per each step and source
-        final CompositeByteBuf result = allocator.compositeBuffer(2 + steps.size() * 2 + sources.size() * 2);
+        final BufferBuilder result = buildBuffer(2 + steps.size() * 2 + sources.size() * 2);
 
         try {
             writeInstructions(allocator, context, steps, result);
@@ -76,33 +89,38 @@ public class ByteCodeSerializer extends SimpleTypeSerializer<Bytecode> {
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 
     private void writeInstructions(final ByteBufAllocator allocator, final GraphBinaryWriter context,
-                                   final List<Bytecode.Instruction> instructions, final CompositeByteBuf result) throws SerializationException {
+                                   final List<Bytecode.Instruction> instructions, final BufferBuilder result) throws SerializationException {
 
-        result.addComponent(true, context.writeValue(instructions.size(), allocator, false));
+        result.add(context.writeValue(instructions.size(), allocator, false));
 
         for (Bytecode.Instruction instruction : instructions) {
-            result.addComponent(true, context.writeValue(instruction.getOperator(), allocator, false));
-            result.addComponent(true, getArgumentsBuffer(instruction.getArguments(), allocator, context));
+            result.add(context.writeValue(instruction.getOperator(), allocator, false));
+            result.add(getArgumentsBuffer(instruction.getArguments(), allocator, context));
         }
     }
 
-    private static ByteBuf getArgumentsBuffer(final Object[] arguments, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(1 + arguments.length);
-        result.addComponent(true, context.writeValue(arguments.length, allocator, false));
+    private ByteBuf getArgumentsBuffer(final Object[] arguments, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
+
+        if (arguments.length == 0) {
+            return context.writeValue(0, allocator, false);
+        }
+
+        final BufferBuilder builder = buildBuffer(1 + arguments.length);
+        builder.add(context.writeValue(arguments.length, allocator, false));
 
         try {
             for (Object value : arguments) {
-                result.addComponent(true, context.write(value, allocator));
+                builder.add(context.write(value, allocator));
             }
         } catch (Exception ex) {
-            result.release();
+            builder.release();
             throw ex;
         }
 
-        return result;
+        return builder.create();
     }
 }

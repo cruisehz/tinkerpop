@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -89,7 +90,38 @@ public abstract class SimpleTypeSerializer<T> implements TypeSerializer<T> {
             return valueSequence;
         }
 
-        return allocator.compositeBuffer(2).addComponents(true, context.getValueFlagNone(), valueSequence);
+        return Unpooled.unmodifiableBuffer(context.getValueFlagNone(), valueSequence);
+    }
+
+    protected BufferBuilder buildBuffer(int components) {
+        return new BufferBuilder(components);
+    }
+
+    protected static class BufferBuilder {
+        private final ByteBuf[] array;
+        private int index;
+
+        private BufferBuilder(int components) {
+            array = new ByteBuf[components];
+        }
+
+        public BufferBuilder add(ByteBuf buffer) {
+            array[index++] = buffer;
+            return this;
+        }
+
+        public ByteBuf create() {
+            return Unpooled.unmodifiableBuffer(array);
+        }
+
+        /**
+         * Releases the buffers added to the builder
+         */
+        public void release() {
+            for (int i = 0; i < index; i++) {
+                array[i].release();
+            }
+        }
     }
 
     /**

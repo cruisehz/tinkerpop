@@ -20,7 +20,6 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -60,29 +59,29 @@ public class EdgeSerializer extends SimpleTypeSerializer<Edge> {
 
     @Override
     protected ByteBuf writeValue(final Edge value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(8);
+        final BufferBuilder result = buildBuffer(8);
 
         try {
-            result.addComponent(true, context.write(value.id(), allocator));
-            result.addComponent(true, context.writeValue(value.label(), allocator, false));
+            result.add(context.write(value.id(), allocator));
+            result.add(context.writeValue(value.label(), allocator, false));
 
-            result.addComponent(true, context.write(value.inVertex().id(), allocator));
-            result.addComponent(true, context.writeValue(value.inVertex().label(), allocator, false));
-            result.addComponent(true, context.write(value.outVertex().id(), allocator));
-            result.addComponent(true, context.writeValue(value.outVertex().label(), allocator, false));
+            result.add(context.write(value.inVertex().id(), allocator));
+            result.add(context.writeValue(value.inVertex().label(), allocator, false));
+            result.add(context.write(value.outVertex().id(), allocator));
+            result.add(context.writeValue(value.outVertex().label(), allocator, false));
 
             // we don't serialize the parent Vertex for edges. they are "references", but we leave a place holder
             // here as an option for the future as we've waffled this soooooooooo many times now
-            result.addComponent(true, context.write(null, allocator));
+            result.add(context.write(null, allocator));
             // we don't serialize properties for graph vertices/edges. they are "references", but we leave a place holder
             // here as an option for the future as we've waffled this soooooooooo many times now
-            result.addComponent(true, context.write(null, allocator));
+            result.add(context.write(null, allocator));
         } catch (Exception ex) {
             // We should release it as the ByteBuf is not going to be yielded for a reader
             result.release();
             throw ex;
         }
         
-        return result;
+        return result.create();
     }
 }

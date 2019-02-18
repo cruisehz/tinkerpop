@@ -20,6 +20,7 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseMessage;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseResult;
 import org.apache.tinkerpop.gremlin.driver.message.ResponseStatus;
@@ -53,7 +54,7 @@ public class ResponseMessageSerializer {
         final ResponseResult result = value.getResult();
         final ResponseStatus status = value.getStatus();
 
-        return allocator.compositeBuffer(8).addComponents(true,
+        return Unpooled.unmodifiableBuffer(
                 // Version
                 allocator.buffer(1).writeByte(0x81),
                 // Nullable request id
@@ -67,6 +68,7 @@ public class ResponseMessageSerializer {
                 // Result meta
                 context.writeValue(result.getMeta(), allocator, false),
                 // Fully-qualified value
-                context.write(result.getData(), allocator));
+                context.write(result.getData(), allocator)
+        );
     }
 }

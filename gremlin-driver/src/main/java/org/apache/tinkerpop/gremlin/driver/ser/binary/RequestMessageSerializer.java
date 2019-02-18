@@ -20,9 +20,11 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 
@@ -50,15 +52,19 @@ public class RequestMessageSerializer {
     }
 
     public ByteBuf writeValue(final RequestMessage value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        return allocator.compositeBuffer(5).addComponents(true,
-                // Version
-                allocator.buffer(1).writeByte(0x81),
-                // RequestId
-                context.writeValue(value.getRequestId(), allocator, false),
-                // Op
-                context.writeValue(value.getOp(), allocator, false),
-                // Processor
-                context.writeValue(value.getProcessor(), allocator, false),
+        final UUID id = value.getRequestId();
+
+        final byte[] opStringBytes = value.getOp().getBytes(StandardCharsets.UTF_8);
+        final byte[] processorStringBytes = value.getProcessor().getBytes(StandardCharsets.UTF_8);
+
+        return Unpooled.unmodifiableBuffer(
+                // Version, request id, op and processor
+                allocator.buffer(17 + 8 + opStringBytes.length + processorStringBytes.length)
+                    .writeByte(0x81)
+                    .writeLong(id.getMostSignificantBits())
+                    .writeLong(id.getLeastSignificantBits())
+                    .writeInt(opStringBytes.length).writeBytes(opStringBytes)
+                    .writeInt(processorStringBytes.length).writeBytes(processorStringBytes),
                 // Args
                 context.writeValue(value.getArgs(), allocator, false));
     }

@@ -20,7 +20,6 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary.types;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.DataType;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.GraphBinaryReader;
@@ -46,15 +45,13 @@ public class TreeSerializer extends SimpleTypeSerializer<Tree> {
 
     @Override
     protected ByteBuf writeValue(final Tree value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(1 + value.size() * 2);
-        result.addComponent(true, allocator.buffer(4).writeInt(value.size()));
+        final BufferBuilder result = buildBuffer(1 + value.size() * 2);
+        result.add(allocator.buffer(4).writeInt(value.size()));
 
         try {
             for (Object key : value.keySet()) {
-                result.addComponents(
-                        true,
-                        context.write(key, allocator),
-                        context.writeValue(value.get(key), allocator, false));
+                result.add(context.write(key, allocator));
+                result.add(context.writeValue(value.get(key), allocator, false));
             }
         } catch (Exception ex) {
             // We should release it as the ByteBuf is not going to be yielded for a reader
@@ -62,6 +59,6 @@ public class TreeSerializer extends SimpleTypeSerializer<Tree> {
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 }

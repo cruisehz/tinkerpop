@@ -48,13 +48,13 @@ public class MapSerializer extends SimpleTypeSerializer<Map> {
 
     @Override
     protected ByteBuf writeValue(final Map value, final ByteBufAllocator allocator, final GraphBinaryWriter context) throws SerializationException {
-        final CompositeByteBuf result = allocator.compositeBuffer(1 + value.size() * 2);
-        result.addComponent(true, allocator.buffer(4).writeInt(value.size()));
+        final BufferBuilder result = buildBuffer(1 + value.size() * 2);
+        result.add(allocator.buffer(4).writeInt(value.size()));
 
         try {
             for (Object key : value.keySet()) {
-                result.addComponent(true, context.write(key, allocator));
-                result.addComponent(true, context.write(value.get(key), allocator));
+                result.add(context.write(key, allocator));
+                result.add(context.write(value.get(key), allocator));
             }
         } catch (Exception ex) {
             // We should release it as the ByteBuf is not going to be yielded for a reader
@@ -62,6 +62,6 @@ public class MapSerializer extends SimpleTypeSerializer<Map> {
             throw ex;
         }
 
-        return result;
+        return result.create();
     }
 }

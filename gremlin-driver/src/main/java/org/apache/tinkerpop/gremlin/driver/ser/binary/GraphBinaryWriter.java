@@ -21,6 +21,7 @@ package org.apache.tinkerpop.gremlin.driver.ser.binary;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.types.CustomTypeSerializer;
 import org.apache.tinkerpop.gremlin.driver.ser.binary.types.TransformSerializer;
@@ -77,10 +78,10 @@ public class GraphBinaryWriter {
             // Try to serialize the custom value before allocating a composite buffer
             ByteBuf customTypeValueBuffer = customTypeSerializer.write(value, allocator, this);
 
-            return allocator.compositeBuffer(3)
-                    .addComponent(true, Unpooled.wrappedBuffer(customTypeCodeBytes))
-                    .addComponent(true, writeValue(customTypeSerializer.getTypeName(), allocator, false))
-                    .addComponent(true, customTypeValueBuffer);
+            return Unpooled.unmodifiableBuffer(
+                    Unpooled.wrappedBuffer(customTypeCodeBytes),
+                    writeValue(customTypeSerializer.getTypeName(), allocator, false),
+                    customTypeValueBuffer);
         }
 
         if (serializer instanceof TransformSerializer) {
@@ -93,7 +94,7 @@ public class GraphBinaryWriter {
         // Try to serialize the value before creating a new composite buffer
         ByteBuf typeInfoAndValueBuffer = serializer.write(value, allocator, this);
 
-        return allocator.compositeBuffer(2).addComponents(true,
+        return Unpooled.unmodifiableBuffer(
                 // {type_code}
                 Unpooled.wrappedBuffer(serializer.getDataType().getDataTypeBuffer()),
                 // {type_info}{value_flag}{value}
@@ -117,10 +118,15 @@ public class GraphBinaryWriter {
         return Unpooled.wrappedBuffer(valueFlagNullBytes);
     }
 
+    private static ByteBuf valueFlagNone = Unpooled.wrappedBuffer(valueFlagNoneBytes);
+
+    private static ByteBuf valueFlagNone2 = UnpooledByteBufAllocator.DEFAULT.directBuffer(1).writeBytes(valueFlagNoneBytes);
+
     /**
      * Gets a buffer containing a single byte with value 0, representing an unset value_flag.
      */
     public ByteBuf getValueFlagNone() {
         return Unpooled.wrappedBuffer(valueFlagNoneBytes);
+        //return valueFlagNone2.duplicate().retain();
     }
 }
