@@ -27,6 +27,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.ConsoleMutationListener;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.EarlyLimitStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -124,20 +126,25 @@ public class TinkerGraphPlayTest {
     @Ignore
     public void testPlayDK() throws Exception {
 
-        Graph graph = TinkerGraph.open();
-        graph.io(GraphMLIo.build()).readGraph("../data/grateful-dead.xml");
+        final Graph graph = TinkerGraph.open();
+        final EventStrategy strategy = EventStrategy.build().addListener(new ConsoleMutationListener(graph)).create();
+        final GraphTraversalSource g = graph.traversal().withStrategies(strategy);
 
-        GraphTraversalSource g = graph.traversal();//.withoutStrategies(EarlyLimitStrategy.class);
-        g.V().has("name", "Bob_Dylan").in("sungBy").as("a").
-                repeat(out().order().by(Order.shuffle).simplePath().from("a")).
-                until(out("writtenBy").has("name", "Johnny_Cash")).limit(1).as("b").
-                repeat(out().order().by(Order.shuffle).as("c").simplePath().from("b").to("c")).
-                until(out("sungBy").has("name", "Grateful_Dead")).limit(1).
-                path().from("a").unfold().
-                <List<String>>project("song", "artists").
-                by("name").
-                by(__.coalesce(out("sungBy", "writtenBy").dedup().values("name"), constant("Unknown")).fold()).
-                forEachRemaining(System.out::println);
+        g.addV().property(T.id, 1).iterate();
+        g.V(1).property("name", "name1").iterate();
+        g.V(1).property("name", "name2").iterate();
+        g.V(1).property("name", "name2").iterate();
+
+        g.addV().property(T.id, 2).iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name1").iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name2").iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name2").iterate();
+
+
+        g.addV().property(T.id, 3).iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name1", "ping", "pong").iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name2", "ping", "pong").iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name2", "pong", "ping").iterate();
     }
 
     @Test
