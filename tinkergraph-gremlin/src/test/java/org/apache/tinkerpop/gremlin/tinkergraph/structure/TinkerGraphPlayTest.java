@@ -25,6 +25,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.ConsoleMutationListener;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.EarlyLimitStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.graphml.GraphMLIo;
@@ -119,12 +122,26 @@ public class TinkerGraphPlayTest {
     @Test
     @Ignore
     public void testPlayDK() throws Exception {
-        GraphTraversalSource g = TinkerFactory.createModern().traversal();
 
-        g.V().index().forEachRemaining(System.out::println);
-        g.V().fold().index().forEachRemaining(System.out::println);
-        g.V().index().with(WithOptions.indexer, WithOptions.list).forEachRemaining(System.out::println);
-        g.V().fold().index().with(WithOptions.indexer, WithOptions.map).forEachRemaining(System.out::println);
+        final Graph graph = TinkerGraph.open();
+        final EventStrategy strategy = EventStrategy.build().addListener(new ConsoleMutationListener(graph)).create();
+        final GraphTraversalSource g = graph.traversal().withStrategies(strategy);
+
+        g.addV().property(T.id, 1).iterate();
+        g.V(1).property("name", "name1").iterate();
+        g.V(1).property("name", "name2").iterate();
+        g.V(1).property("name", "name2").iterate();
+
+        g.addV().property(T.id, 2).iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name1").iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name2").iterate();
+        g.V(2).property(VertexProperty.Cardinality.list, "name", "name2").iterate();
+
+
+        g.addV().property(T.id, 3).iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name1", "ping", "pong").iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name2", "ping", "pong").iterate();
+        g.V(3).property(VertexProperty.Cardinality.set, "name", "name2", "pong", "ping").iterate();
     }
 
     @Test
