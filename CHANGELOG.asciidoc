@@ -24,6 +24,7 @@ image::https://raw.githubusercontent.com/apache/tinkerpop/master/docs/static/ima
 === TinkerPop 3.3.7 (Release Date: NOT OFFICIALLY RELEASED YET)
 
 * Ensure `gremlin.sh` works when directories contain spaces
+* Made `EventStrategy` compatible with multi-valued properties.
 
 
 [[release-3-3-6]]
